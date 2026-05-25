@@ -85,3 +85,17 @@ main, .site-header {
   .hero h2 { font-size: 2.2rem; }
   .grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+.checkout-status {
+  margin-top: 1rem;
+  font-size: 0.95rem;
+  color: #dbe6ff;
+}
+
+.checkout-status[data-mode='success'] {
+  color: #82f7c7;
+}
+
+.checkout-status[data-mode='warn'] {
+  color: #ffd78a;
+}
