@@ -1,5 +1,5 @@
 (function () {
-  const WHATSAPP_NUMBER = '972505555555'; // TODO: Update with real production number
+  const WHATSAPP_NUMBER = '972552543996';
   const TRACK_ENDPOINT = '/api/track';
   const HEALTH_ENDPOINT = '/api/health';
   const CHECKOUT_ENDPOINT = '/api/checkout';
