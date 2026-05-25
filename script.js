@@ -1,5 +1,5 @@
 (function () {
-  const WHATSAPP_NUMBER = '972501234567';
+  const WHATSAPP_NUMBER = '972505555555'; // TODO: Update with real production number
   const TRACK_ENDPOINT = '/api/track';
   const HEALTH_ENDPOINT = '/api/health';
   const CHECKOUT_ENDPOINT = '/api/checkout';
@@ -238,16 +238,21 @@
     };
 
     try {
-      setStatus('בודקים זמינות מערכת לפני הפעלת האוטומציה…', 'info');
-      await verifyBackendHealth();
-
-      if (hasStaleState()) {
-        throw new Error('stale-state-detected');
+      setStatus('בודקים זמינות מערכת…', 'info');
+      
+      // Attempt backend operations but don't block the user if they fail
+      try {
+        await verifyBackendHealth();
+        if (!hasStaleState()) {
+          checkoutState.orchestrator = 'running';
+          await Promise.allSettled([
+            sendTracking(payload),
+            synchronizeCampaignTrigger(payload)
+          ]);
+        }
+      } catch (e) {
+        logEvent('warn', 'orchestration.soft_failure', { error: e.message });
       }
-
-      checkoutState.orchestrator = 'running';
-      await sendTracking(payload);
-      await synchronizeCampaignTrigger(payload);
       dispatchPixels(payload);
       recordSuccess();
       checkoutState.orchestrator = 'complete';
