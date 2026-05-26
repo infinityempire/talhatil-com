@@ -1,7 +1,12 @@
 {
-    "name": "TalHatil Autonomous Environment",
+    "name": "TalHatil Delta Agent Cloud Environment",
     "build": {
         "dockerfile": "Dockerfile"
+    },
+    "secrets": {
+        "GEMINI_API_KEY": {
+            "description": "Gemini API key for Delta autonomous agent"
+        }
     },
     "customizations": {
         "vscode": {
@@ -11,6 +16,6 @@
             ]
         }
     },
-    "postCreateCommand": "pip3 install -r delta-agent-core/OpenManus-Setup/requirements-dev.txt || true && playwright install-deps && playwright install chromium",
+    "postCreateCommand": "pip3 install google-generativeai playwright pynacl requests && playwright install-deps && playwright install chromium && echo '✅ Delta Agent environment ready! Run: cd delta-agent-core && python3 delta_agent.py'",
     "remoteUser": "root"
 }
