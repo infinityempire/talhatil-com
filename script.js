@@ -137,7 +137,15 @@
       headers: { Accept: 'application/json' }
     }, REQUEST_TIMEOUT_MS));
 
-    if (!response.ok) throw new Error(`health-status-${response.status}`);
+    if (!response.ok) {
+      const errorMsg = `Backend unavailable: HTTP ${response.status}`;
+      logEvent('error', 'backend.health.failed', {
+        status: response.status,
+        statusText: response.statusText,
+        correlationId: checkoutState.correlationId
+      });
+      throw new Error(errorMsg);
+    }
 
     checkoutState.backend = 'ready';
     checkoutState.lastSyncedAt = Date.now();
@@ -160,7 +168,15 @@
       keepalive: true
     }, REQUEST_TIMEOUT_MS));
 
-    if (!response.ok) throw new Error(`track-status-${response.status}`);
+    if (!response.ok) {
+      const errorMsg = `Tracking failed: HTTP ${response.status}`;
+      logEvent('error', 'tracking.failed', {
+        status: response.status,
+        endpoint: TRACK_ENDPOINT,
+        correlationId: checkoutState.correlationId
+      });
+      throw new Error(errorMsg);
+    }
 
     logEvent('info', 'tracking.success', {
       correlationId: checkoutState.correlationId,
@@ -178,7 +194,15 @@
       body: JSON.stringify({ ...payload, orchestrator_status: checkoutState.orchestrator })
     }, REQUEST_TIMEOUT_MS));
 
-    if (!response.ok) throw new Error(`checkout-status-${response.status}`);
+    if (!response.ok) {
+      const errorMsg = `Checkout sync failed: HTTP ${response.status}`;
+      logEvent('error', 'checkout.sync.failed', {
+        status: response.status,
+        endpoint: CHECKOUT_ENDPOINT,
+        correlationId: checkoutState.correlationId
+      });
+      throw new Error(errorMsg);
+    }
 
     logEvent('info', 'checkout.sync.success', {
       correlationId: checkoutState.correlationId,
@@ -240,19 +264,17 @@
     try {
       setStatus('בודקים זמינות מערכת…', 'info');
       
-      // Attempt backend operations but don't block the user if they fail
-      try {
-        await verifyBackendHealth();
-        if (!hasStaleState()) {
-          checkoutState.orchestrator = 'running';
-          await Promise.allSettled([
-            sendTracking(payload),
-            synchronizeCampaignTrigger(payload)
-          ]);
-        }
-      } catch (e) {
-        logEvent('warn', 'orchestration.soft_failure', { error: e.message });
+      // Verify backend is available before proceeding
+      await verifyBackendHealth();
+      
+      if (!hasStaleState()) {
+        checkoutState.orchestrator = 'running';
+        await Promise.allSettled([
+          sendTracking(payload),
+          synchronizeCampaignTrigger(payload)
+        ]);
       }
+      
       dispatchPixels(payload);
       recordSuccess();
       checkoutState.orchestrator = 'complete';
@@ -262,7 +284,16 @@
       checkoutState.orchestrator = 'paused';
       recordFailure(error.message);
       enqueueRecoveryTask(payload);
-      setStatus('זיהינו תקלה זמנית. המעבר לוואטסאפ פעיל, והמערכת תתאושש אוטומטית.', 'warn');
+      
+      const errorMessage = error.message.includes('Backend unavailable') 
+        ? 'שגיאה: השרת לא זמין כרגע. אנא נסה שנית בעוד כמה רגעים.'
+        : 'זיהינו תקלה זמנית. המעבר לוואטסאפ פעיל, והמערכת תתאושש אוטומטית.';
+      
+      setStatus(errorMessage, 'error');
+      logEvent('error', 'orchestration.failed', { 
+        error: error.message,
+        correlationId: checkoutState.correlationId
+      });
       return payload;
     }
   }
