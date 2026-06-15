@@ -1,0 +1,51 @@
+name: 🚀 Deploy to talhatil.com (FTP)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'סיבת הפריסה הידנית'
+        required: false
+        default: 'Manual deploy'
+
+jobs:
+  deploy:
+    name: Deploy via FTP
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: ✅ Checkout code
+        uses: actions/checkout@v4
+
+      - name: 📋 Show deploy info
+        run: |
+          echo "🌐 Deploying to: talhatil.com"
+          echo "📦 Branch: ${{ github.ref_name }}"
+          echo "👤 Triggered by: ${{ github.actor }}"
+          echo "📝 Commit: ${{ github.sha }}"
+          echo "🕐 Time: $(date)"
+
+      - name: 📤 Deploy via FTP (SamKirkland/FTP-Deploy-Action)
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_HOST }}
+          username: ${{ secrets.FTP_USER }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./
+          server-dir: /public_html/
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            **/.github/**
+            **/README.md
+            **/*.min
+          dangerous-clean-slate: false
+          log-level: verbose
+
+      - name: ✅ Deploy complete
+        run: |
+          echo "✅ Deployment to talhatil.com completed successfully!"
+          echo "🔗 https://talhatil.com"
