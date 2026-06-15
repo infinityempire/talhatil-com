@@ -1,4 +1,4 @@
-name: 🚀 Deploy to talhatil.com (Vercel)
+name: 🚀 Deploy to talhatil.com (GitHub Pages)
 
 on:
   push:
@@ -10,9 +10,18 @@ on:
         required: false
         default: 'Manual deploy'
 
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
 jobs:
   deploy:
-    name: Deploy via Vercel CLI
+    name: Deploy via GitHub Pages
     runs-on: ubuntu-latest
 
     steps:
@@ -27,16 +36,17 @@ jobs:
           echo "📝 Commit: ${{ github.sha }}"
           echo "🕐 Time: $(date)"
 
-      - name: 📦 Install Vercel CLI
-        run: npm install -g vercel@latest
+      - name: 📂 Setup Pages
+        uses: actions/configure-pages@v4
 
-      - name: 🚀 Deploy to Vercel (Production)
-        run: |
-          vercel deploy --prod --yes \
-            --token=${{ secrets.VERCEL_TOKEN }}
-        env:
-          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      - name: 📦 Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.'
+
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
 
       - name: ✅ Deploy complete
         run: |
