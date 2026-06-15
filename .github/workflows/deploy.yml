@@ -1,4 +1,4 @@
-name: 🚀 Deploy to talhatil.com (FTP)
+name: 🚀 Deploy to talhatil.com (Vercel)
 
 on:
   push:
@@ -12,7 +12,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy via FTP
+    name: Deploy via Vercel CLI
     runs-on: ubuntu-latest
 
     steps:
@@ -27,23 +27,16 @@ jobs:
           echo "📝 Commit: ${{ github.sha }}"
           echo "🕐 Time: $(date)"
 
-      - name: 📤 Deploy via FTP (SamKirkland/FTP-Deploy-Action)
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ secrets.FTP_HOST }}
-          username: ${{ secrets.FTP_USER }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./
-          server-dir: /public_html/
-          exclude: |
-            **/.git*
-            **/.git*/**
-            **/node_modules/**
-            **/.github/**
-            **/README.md
-            **/*.min
-          dangerous-clean-slate: false
-          log-level: verbose
+      - name: 📦 Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: 🚀 Deploy to Vercel (Production)
+        run: |
+          vercel deploy --prod --yes \
+            --token=${{ secrets.VERCEL_TOKEN }}
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 
       - name: ✅ Deploy complete
         run: |
